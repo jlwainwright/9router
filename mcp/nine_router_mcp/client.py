@@ -14,7 +14,7 @@ def get_client() -> httpx.AsyncClient:
     return _client
 
 
-def fmt_error(status: int, body: dict, resource: str = "", id: str = "") -> str:
+def fmt_error(status: int, body: dict, resource: str = "", resource_id: str = "") -> str:
     """Return a consistent, actionable error string."""
     if status == 0:
         return body.get("error", f"Cannot reach 9Router at {NINE_ROUTER_URL}. Is it running?")
@@ -25,7 +25,7 @@ def fmt_error(status: int, body: dict, resource: str = "", id: str = "") -> str:
     if status == 404:
         resource_label = resource.replace("_", " ").title() if resource else "Resource"
         hint = f" Use list_{resource}s to see valid IDs." if resource else ""
-        label = f" '{id}'" if id else ""
+        label = f" '{resource_id}'" if resource_id else ""
         return f"{resource_label}{label} not found.{hint}"
     if status == 409:
         return "Cannot delete — resource is still in use. Remove it from bound providers first."
@@ -38,8 +38,12 @@ async def api_get(path: str, params: dict | None = None) -> tuple[int, dict]:
     client = get_client()
     try:
         r = await client.get(path, params=params)
-        return r.status_code, r.json()
-    except httpx.ConnectError:
+        try:
+            body = r.json()
+        except Exception:
+            body = {"error": r.text or f"Non-JSON response (HTTP {r.status_code})"}
+        return r.status_code, body
+    except httpx.HTTPError:
         return 0, {"error": f"Cannot reach 9Router at {NINE_ROUTER_URL}. Is it running?"}
 
 
@@ -47,8 +51,12 @@ async def api_post(path: str, json: dict | None = None) -> tuple[int, dict]:
     client = get_client()
     try:
         r = await client.post(path, json=json or {})
-        return r.status_code, r.json()
-    except httpx.ConnectError:
+        try:
+            body = r.json()
+        except Exception:
+            body = {"error": r.text or f"Non-JSON response (HTTP {r.status_code})"}
+        return r.status_code, body
+    except httpx.HTTPError:
         return 0, {"error": f"Cannot reach 9Router at {NINE_ROUTER_URL}. Is it running?"}
 
 
@@ -56,8 +64,12 @@ async def api_put(path: str, json: dict | None = None) -> tuple[int, dict]:
     client = get_client()
     try:
         r = await client.put(path, json=json or {})
-        return r.status_code, r.json()
-    except httpx.ConnectError:
+        try:
+            body = r.json()
+        except Exception:
+            body = {"error": r.text or f"Non-JSON response (HTTP {r.status_code})"}
+        return r.status_code, body
+    except httpx.HTTPError:
         return 0, {"error": f"Cannot reach 9Router at {NINE_ROUTER_URL}. Is it running?"}
 
 
@@ -65,8 +77,12 @@ async def api_patch(path: str, json: dict | None = None) -> tuple[int, dict]:
     client = get_client()
     try:
         r = await client.patch(path, json=json or {})
-        return r.status_code, r.json()
-    except httpx.ConnectError:
+        try:
+            body = r.json()
+        except Exception:
+            body = {"error": r.text or f"Non-JSON response (HTTP {r.status_code})"}
+        return r.status_code, body
+    except httpx.HTTPError:
         return 0, {"error": f"Cannot reach 9Router at {NINE_ROUTER_URL}. Is it running?"}
 
 
@@ -74,6 +90,10 @@ async def api_delete(path: str, params: dict | None = None) -> tuple[int, dict]:
     client = get_client()
     try:
         r = await client.delete(path, params=params)
-        return r.status_code, r.json() if r.content else {}
-    except httpx.ConnectError:
+        try:
+            body = r.json() if r.content else {}
+        except Exception:
+            body = {"error": r.text or f"Non-JSON response (HTTP {r.status_code})"}
+        return r.status_code, body
+    except httpx.HTTPError:
         return 0, {"error": f"Cannot reach 9Router at {NINE_ROUTER_URL}. Is it running?"}
