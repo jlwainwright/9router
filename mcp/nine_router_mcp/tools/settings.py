@@ -25,27 +25,27 @@ async def get_settings() -> str:
 
 @mcp.tool(description=(
     "Update 9Router global settings. Supply only the fields you want to change. "
-    "Common fields: outbound_proxy_enabled (bool), outbound_proxy_url (str), "
-    "outbound_no_proxy (str), require_login (bool), locale (str). "
+    "Common fields: outbound_proxy_enabled (bool), outbound_proxy_url (str | None = None), "
+    "outbound_no_proxy (str | None = None), require_login (bool), locale (str | None = None). "
     "Password changes are not supported through this tool."
 ))
 async def update_settings(
     outbound_proxy_enabled: bool | None = None,
-    outbound_proxy_url: str = "",
-    outbound_no_proxy: str = "",
+    outbound_proxy_url: str | None = None,
+    outbound_no_proxy: str | None = None,
     require_login: bool | None = None,
-    locale: str = "",
+    locale: str | None = None,
 ) -> str:
     payload: dict = {}
     if outbound_proxy_enabled is not None:
         payload["outboundProxyEnabled"] = outbound_proxy_enabled
-    if outbound_proxy_url:
+    if outbound_proxy_url is not None:
         payload["outboundProxyUrl"] = outbound_proxy_url
-    if outbound_no_proxy:
+    if outbound_no_proxy is not None:
         payload["outboundNoProxy"] = outbound_no_proxy
     if require_login is not None:
         payload["requireLogin"] = require_login
-    if locale:
+    if locale is not None:
         payload["locale"] = locale
     if not payload:
         return "No settings to update — provide at least one field."

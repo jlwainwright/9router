@@ -55,20 +55,20 @@ async def create_proxy_pool(name: str, proxy_url: str, no_proxy: str = "", stric
     return f"✓ Proxy pool created: {pool.get('name')} (id={pool.get('id')})"
 
 
-@mcp.tool(description="Update a proxy pool by ID. Supply only fields to change: name, proxy_url, no_proxy, is_active.")
+@mcp.tool(description="Update a proxy pool by ID. Supply only fields to change: name (can be empty string to clear), proxy_url (can be empty string to clear), no_proxy (can be empty string to clear), is_active.")
 async def update_proxy_pool(
     id: str,
-    name: str = "",
-    proxy_url: str = "",
-    no_proxy: str = "",
+    name: str | None = None,
+    proxy_url: str | None = None,
+    no_proxy: str | None = None,
     is_active: bool | None = None,
 ) -> str:
     payload: dict = {}
-    if name:
+    if name is not None:
         payload["name"] = name
-    if proxy_url:
+    if proxy_url is not None:
         payload["proxyUrl"] = proxy_url
-    if no_proxy:
+    if no_proxy is not None:
         payload["noProxy"] = no_proxy
     if is_active is not None:
         payload["isActive"] = is_active
