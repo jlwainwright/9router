@@ -1,4 +1,3 @@
-import { Readable } from "stream";
 import { MEMORY_CONFIG } from "../config/runtimeConfig.js";
 
 const isCloud = typeof caches !== "undefined" && typeof caches === "object";
@@ -158,7 +157,6 @@ async function getDispatcher(proxyUrl) {
 async function createBypassRequest(parsedUrl, realIP, options) {
   const https = await import("https");
   const net = await import("net");
-  const { Readable } = await import("stream");
 
   return new Promise((resolve, reject) => {
     const socket = new net.Socket();
@@ -177,12 +175,22 @@ async function createBypassRequest(parsedUrl, realIP, options) {
       };
 
       const req = https.request(reqOptions, (res) => {
+        // Build a WHATWG ReadableStream from the Node.js IncomingMessage without
+        // relying on Readable.toWeb(), which webpack bundles may strip.
+        const body = new ReadableStream({
+          start(controller) {
+            res.on("data", (chunk) => controller.enqueue(chunk));
+            res.on("end", () => controller.close());
+            res.on("error", (err) => controller.error(err));
+          },
+          cancel() { res.destroy(); }
+        });
         const response = {
           ok: res.statusCode >= HTTP_SUCCESS_MIN && res.statusCode < HTTP_SUCCESS_MAX,
           status: res.statusCode,
           statusText: res.statusMessage,
           headers: new Map(Object.entries(res.headers)),
-          body: Readable.toWeb(res),
+          body,
           text: async () => {
             const chunks = [];
             for await (const chunk of res) chunks.push(chunk);
