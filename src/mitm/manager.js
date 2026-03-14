@@ -73,7 +73,9 @@ function isProcessAlive(pid) {
     process.kill(pid, 0);
     return true;
   } catch (err) {
-    return err.code === "EACCES";
+    // EPERM = process exists but we lack permission (e.g. root process, non-root caller)
+    // EACCES = same on some platforms
+    return err.code === "EPERM" || err.code === "EACCES";
   }
 }
 
@@ -418,13 +420,16 @@ async function startServer(apiKey, sudoPassword) {
     if (_updateSettings) await _updateSettings({ mitmCertInstalled: true }).catch(() => { });
   } else {
     // Non-Windows: Root CA already installed in Step 1.5, just spawn server
+    // detached: true so the MITM server survives Next.js HMR restarts/crashes
     const inlineCmd = `ROUTER_API_KEY='${apiKey}' NODE_ENV='production' '${process.execPath}' '${SERVER_PATH}'`;
     serverProcess = spawn(
       "sudo", ["-S", "-E", "sh", "-c", inlineCmd],
-      { detached: false, stdio: ["pipe", "pipe", "pipe"] }
+      { detached: true, stdio: ["pipe", "pipe", "pipe"] }
     );
     serverProcess.stdin.write(`${sudoPassword}\n`);
     serverProcess.stdin.end();
+    // Detach from parent so MITM keeps running when Next.js restarts
+    serverProcess.unref();
   }
 
   if (!IS_WIN && serverProcess) {
