@@ -96,7 +96,7 @@ async def test_provider(id: str) -> str:
     status, body = await api_post(f"/api/providers/{id}/test")
     if status not in (200, 201):
         return fmt_error(status, body, "provider", resource_id=id)
-    success = body.get("success", body.get("status") == "ok")
+    success = body.get("valid", False)
     error = body.get("error", "")
     if success:
         return f"✓ Provider {id} test passed."

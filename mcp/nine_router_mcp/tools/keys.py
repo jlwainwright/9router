@@ -41,5 +41,5 @@ async def create_api_key(name: str) -> str:
 async def delete_api_key(id: str) -> str:
     status, body = await api_delete(f"/api/keys/{id}")
     if status not in (200, 204):
-        return fmt_error(status, body, "key", resource_id=id)
+        return fmt_error(status, body, "api_key", resource_id=id)
     return f"✓ API key {id} deleted."
