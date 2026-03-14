@@ -115,8 +115,8 @@ async def list_request_details(
     status, body = await api_get("/api/usage/request-details", params=params)
     if status != 200:
         return fmt_error(status, body)
-    records = body.get("data", body.get("records", []))
-    total = body.get("total", len(records))
+    records = body.get("details", [])
+    total = body.get("pagination", {}).get("totalItems", len(records))
     if not records:
         return "No request records found."
     lines = [
@@ -126,12 +126,15 @@ async def list_request_details(
     ]
     for r in records:
         if isinstance(r, dict):
+            tokens = r.get('tokens') or {}
+            prompt = tokens.get('prompt_tokens', tokens.get('input_tokens', ''))
+            completion = tokens.get('completion_tokens', tokens.get('output_tokens', ''))
             lines.append(
                 f"| {r.get('timestamp', r.get('createdAt', ''))} "
                 f"| {r.get('model', '')} "
                 f"| {r.get('provider', '')} "
                 f"| {r.get('status', '')} "
-                f"| {r.get('promptTokens', r.get('prompt_tokens', ''))} "
-                f"| {r.get('completionTokens', r.get('completion_tokens', ''))} |"
+                f"| {prompt} "
+                f"| {completion} |"
             )
     return "\n".join(lines)
