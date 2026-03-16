@@ -17,6 +17,7 @@ export default function MitmServerCard({ apiKeys, cloudEnabled, onStatusChange }
   const [pendingAction, setPendingAction] = useState(null); // "start" | "stop"
 
   const isWindows = typeof navigator !== "undefined" && navigator.userAgent?.includes("Windows");
+  const isAdmin = status?.isAdmin !== false; // default true until status loaded
 
   useEffect(() => {
     if (apiKeys?.length > 0 && !selectedApiKey) {
@@ -55,7 +56,19 @@ export default function MitmServerCard({ apiKeys, cloudEnabled, onStatusChange }
     setLoading(true);
     setMessage(null);
     try {
-      if (action === "start") {
+      if (action === "trust-cert") {
+        const res = await fetch("/api/cli-tools/antigravity-mitm", {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ action: "trust-cert", sudoPassword: password }),
+        });
+        const data = await res.json();
+        if (res.ok) {
+          setMessage({ type: "success", text: "Certificate trusted successfully" });
+        } else {
+          setMessage({ type: "error", text: data.error || "Failed to trust certificate" });
+        }
+      } else if (action === "start") {
         const keyToUse = selectedApiKey?.trim()
           || (apiKeys?.length > 0 ? apiKeys[0].key : null)
           || (!cloudEnabled ? "sk_9router" : null);
@@ -120,14 +133,15 @@ export default function MitmServerCard({ apiKeys, cloudEnabled, onStatusChange }
                 <Badge variant="default" size="sm">Stopped</Badge>
               )}
             </div>
-            <div className="flex items-center gap-1 text-xs text-text-muted">
+            <div className="flex items-center gap-1 text-xs text-text-muted" data-i18n-skip="true">
               {[
                 { label: "Cert", ok: status?.certExists },
+                { label: "Trusted", ok: status?.certTrusted },
                 { label: "Server", ok: isRunning },
               ].map(({ label, ok }) => (
                 <span key={label} className={`flex items-center gap-0.5 px-1.5 py-0.5 rounded ${ok ? "text-green-600" : "text-text-muted"}`}>
-                  <span className={`material-symbols-outlined text-[12px]`}>
-                    {ok ? "check_circle" : "radio_button_unchecked"}
+                  <span className="material-symbols-outlined text-[12px]">
+                    {ok ? "check_circle" : "cancel"}
                   </span>
                   {label}
                 </span>
@@ -173,7 +187,18 @@ export default function MitmServerCard({ apiKeys, cloudEnabled, onStatusChange }
           )}
 
           {/* Action button */}
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 flex-wrap" data-i18n-skip="true">
+            {/* Trust Cert button — only when cert exists but not trusted */}
+            {status?.certExists && !status?.certTrusted && (
+              <button
+                onClick={() => handleAction("trust-cert")}
+                disabled={loading}
+                className="px-4 py-1.5 rounded-lg bg-yellow-500/10 border border-yellow-500/30 text-yellow-600 font-medium text-xs flex items-center gap-1.5 hover:bg-yellow-500/20 transition-colors disabled:opacity-50"
+              >
+                <span className="material-symbols-outlined text-[16px]">verified_user</span>
+                Trust Cert
+              </button>
+            )}
             {isRunning ? (
               <button
                 onClick={() => handleAction("stop")}
@@ -186,7 +211,7 @@ export default function MitmServerCard({ apiKeys, cloudEnabled, onStatusChange }
             ) : (
               <button
                 onClick={() => handleAction("start")}
-                disabled={loading}
+                disabled={loading || (isWindows && !isAdmin)}
                 className="px-4 py-1.5 rounded-lg bg-primary/10 border border-primary/30 text-primary font-medium text-xs flex items-center gap-1.5 hover:bg-primary/20 transition-colors disabled:opacity-50"
               >
                 <span className="material-symbols-outlined text-[16px]">play_circle</span>
@@ -199,10 +224,10 @@ export default function MitmServerCard({ apiKeys, cloudEnabled, onStatusChange }
           </div>
 
           {/* Windows admin warning */}
-          {!isRunning && isWindows && (
-            <div className="flex items-center gap-2 px-2 py-1.5 rounded text-xs bg-yellow-500/10 text-yellow-600 border border-yellow-500/20">
-              <span className="material-symbols-outlined text-[14px]">warning</span>
-              <span>Windows: Run 9Router terminal as Administrator</span>
+          {isWindows && !isAdmin && (
+            <div className="flex items-center gap-2 px-2 py-1.5 rounded text-xs bg-red-500/10 text-red-600 border border-red-500/20">
+              <span className="material-symbols-outlined text-[14px]">shield_lock</span>
+              <span>Administrator required — restart 9Router as Administrator to use MITM</span>
             </div>
           )}
         </div>
