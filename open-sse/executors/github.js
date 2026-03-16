@@ -7,6 +7,7 @@ import { openaiResponsesToOpenAIResponse } from "../translator/response/openai-r
 import { initState } from "../translator/index.js";
 import { parseSSELine, formatSSE } from "../utils/streamHelpers.js";
 import { proxyAwareFetch } from "../utils/proxyFetch.js";
+import { cleanJSONSchemaForAntigravity } from "../translator/helpers/geminiHelper.js";
 import crypto from "crypto";
 
 export class GithubExecutor extends BaseExecutor {
@@ -114,9 +115,17 @@ export class GithubExecutor extends BaseExecutor {
 
     // Sanitize messages before sending to /chat/completions
     // This handles Claude models on GitHub Copilot which reject non-text/image_url content types
+    let sanitizedBody = this.sanitizeMessagesForChatCompletions(options.body);
+
+    // Clean tool schemas for Gemini models (remove unsupported JSON Schema features like patternProperties)
+    if (model?.includes("gemini")) {
+      sanitizedBody = this.sanitizeToolSchemasForGemini(sanitizedBody);
+      log?.debug("GITHUB", `Cleaned tool schemas for Gemini model ${model}`);
+    }
+
     const sanitizedOptions = {
       ...options,
-      body: this.sanitizeMessagesForChatCompletions(options.body)
+      body: sanitizedBody
     };
 
     const result = await super.execute({ ...sanitizedOptions, proxyOptions: options.proxyOptions || null });
@@ -132,6 +141,30 @@ export class GithubExecutor extends BaseExecutor {
     }
 
     return result;
+  }
+
+  // Clean tool schemas for Gemini compatibility (remove unsupported JSON Schema features)
+  sanitizeToolSchemasForGemini(body) {
+    if (!body?.tools) return body;
+
+    const sanitized = { ...body };
+
+    sanitized.tools = body.tools.map(tool => {
+      if (!tool.function) return tool;
+
+      const cleanedFunction = { ...tool.function };
+
+      if (cleanedFunction.parameters) {
+        // Clone and clean the schema
+        const schema = JSON.parse(JSON.stringify(cleanedFunction.parameters));
+        cleanJSONSchemaForAntigravity(schema);
+        cleanedFunction.parameters = schema;
+      }
+
+      return { ...tool, function: cleanedFunction };
+    });
+
+    return sanitized;
   }
 
   async executeWithResponsesEndpoint({ model, body, stream, credentials, signal, log, proxyOptions = null }) {

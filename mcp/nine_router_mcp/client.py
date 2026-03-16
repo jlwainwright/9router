@@ -2,7 +2,7 @@
 import os
 import httpx
 
-NINE_ROUTER_URL = os.environ.get("NINE_ROUTER_URL", "http://localhost:20128").rstrip("/")
+NINE_ROUTER_URL = os.environ.get("NINE_ROUTER_URL", "https://9router.jacqueswainwright.com").rstrip("/")
 
 _client: httpx.AsyncClient | None = None
 
