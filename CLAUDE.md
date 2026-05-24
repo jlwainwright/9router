@@ -90,6 +90,10 @@ Combo names are custom strings that expand to a sequence of models with automati
 
 `next.config.mjs` rewrites `/v1/*` → `/api/v1/*`. The `/codex/*` path routes to the Responses API endpoint.
 
+### MCP (Cursor / agents)
+
+A **FastMCP** management server lives under `mcp/` (`nine_router_mcp`). Cursor loads **`.cursor/mcp.json`** (project) merged with **`~/.cursor/mcp.json`**. Use an **absolute** path to `server.py` in `args` plus **`PYTHONPATH=${workspaceFolder}/mcp`** so startup works when `cwd` is not applied (see `mcp/README.md` and `.claude/skills/9router/SKILL.md`).
+
 ### Storage
 
 | File | Contents | Env Control |

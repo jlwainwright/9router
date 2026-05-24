@@ -212,7 +212,8 @@ export async function getDb() {
 export async function getProviderConnections(filter = {}) {
   const db = await getDb();
   let connections = db.data.providerConnections || [];
-  
+  if (!Array.isArray(connections)) connections = [];
+
   if (filter.provider) {
     connections = connections.filter(c => c.provider === filter.provider);
   }
@@ -234,6 +235,7 @@ export async function getProviderConnections(filter = {}) {
 export async function getProviderNodes(filter = {}) {
   const db = await getDb();
   let nodes = db.data.providerNodes || [];
+  if (!Array.isArray(nodes)) nodes = [];
 
   if (filter.type) {
     nodes = nodes.filter((node) => node.type === filter.type);
@@ -247,7 +249,8 @@ export async function getProviderNodes(filter = {}) {
  */
 export async function getProviderNodeById(id) {
   const db = await getDb();
-  return db.data.providerNodes.find((node) => node.id === id) || null;
+  const nodes = Array.isArray(db.data.providerNodes) ? db.data.providerNodes : [];
+  return nodes.find((node) => node.id === id) || null;
 }
 
 /**
@@ -331,6 +334,7 @@ export async function deleteProviderNode(id) {
 export async function getProxyPools(filter = {}) {
   const db = await getDb();
   let pools = db.data.proxyPools || [];
+  if (!Array.isArray(pools)) pools = [];
 
   if (filter.isActive !== undefined) {
     pools = pools.filter((pool) => pool.isActive === filter.isActive);
@@ -662,7 +666,8 @@ export async function setMitmAliasAll(toolName, mappings) {
  */
 export async function getCombos() {
   const db = await getDb();
-  return db.data.combos || [];
+  const combos = db.data.combos || [];
+  return Array.isArray(combos) ? combos : [];
 }
 
 /**
@@ -744,7 +749,8 @@ export async function deleteCombo(id) {
  */
 export async function getApiKeys() {
   const db = await getDb();
-  return db.data.apiKeys || [];
+  const keys = db.data.apiKeys || [];
+  return Array.isArray(keys) ? keys : [];
 }
 
 /**

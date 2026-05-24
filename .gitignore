@@ -46,6 +46,7 @@ data/
 logs/*
 source/*
 .cursor/*
+!.cursor/mcp.json
 docs/*
 !docs/ARCHITECTURE.md
 test/*

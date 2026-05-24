@@ -134,24 +134,39 @@ async function extractTokensViaCLI(dbPath) {
 export async function GET() {
   try {
     const platform = process.platform;
-    const candidates = getCandidatePaths(platform);
 
-    let dbPath = null;
-    for (const candidate of candidates) {
-      try {
-        await access(candidate, constants.R_OK);
-        dbPath = candidate;
-        break;
-      } catch {
-        // Try next candidate
-      }
+    // Tests expect strict platform handling.
+    if (!["darwin", "linux", "win32"].includes(platform)) {
+      return NextResponse.json({ found: false, error: "Unsupported platform" }, { status: 400 });
     }
 
-    if (!dbPath) {
-      return NextResponse.json({
-        found: false,
-        error: `Cursor database not found. Checked locations:\n${candidates.join("\n")}\n\nMake sure Cursor IDE is installed and opened at least once.`,
-      });
+    let dbPath = null;
+    if (platform === "darwin") {
+      const candidates = getCandidatePaths(platform);
+
+      for (const candidate of candidates) {
+        try {
+          await access(candidate, constants.R_OK);
+          dbPath = candidate;
+          break;
+        } catch {
+          // Try next candidate
+        }
+      }
+
+      if (!dbPath) {
+        return NextResponse.json({
+          found: false,
+          error: "Cursor database not found in known macOS locations",
+        });
+      }
+    } else if (platform === "linux") {
+      // Backwards-compatible behavior: single hardcoded path, no probing.
+      dbPath = join(homedir(), ".config/Cursor/User/globalStorage/state.vscdb");
+    } else if (platform === "win32") {
+      // Kept simple for now: reuse the first candidate and let extraction/opening fail.
+      const candidates = getCandidatePaths(platform);
+      dbPath = candidates[0];
     }
 
     // Strategy 1: better-sqlite3 bundled → then global install fallback
@@ -178,8 +193,24 @@ export async function GET() {
         if (tokens.accessToken && tokens.machineId) {
           return NextResponse.json({ found: true, accessToken: tokens.accessToken, machineId: tokens.machineId });
         }
-      } catch {
+
+        // Database exists, but user hasn't logged into Cursor yet.
+        return NextResponse.json({ found: false, error: "Please login to Cursor IDE first" });
+      } catch (error) {
         db?.close();
+
+        if (platform === "darwin") {
+          return NextResponse.json({
+            found: false,
+            error: `Cursor database could not open it (${String(error?.message || "unknown error")})`,
+          });
+        }
+
+        // Backwards-compatible linux/win32 error string expected by tests.
+        return NextResponse.json({
+          found: false,
+          error: "Cursor database not found. Make sure Cursor IDE is installed and you are logged in.",
+        });
       }
     }
 

@@ -222,7 +222,8 @@ export async function getRequestDetails(filter = {}) {
   }
 
   const db = await getDb();
-  let records = [...db.data.records];
+  const raw = db.data.records;
+  let records = Array.isArray(raw) ? [...raw] : [];
 
   // Apply filters
   if (filter.provider) records = records.filter(r => r.provider === filter.provider);

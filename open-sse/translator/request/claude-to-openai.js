@@ -177,9 +177,12 @@ function convertClaudeMessage(msg) {
     // If has tool results, return array of tool messages
     if (toolResults.length > 0) {
       if (parts.length > 0) {
-        const textContent = parts.length === 1 && parts[0].type === "text" 
-          ? parts[0].text 
-          : parts;
+        const allText = parts.every(p => p.type === "text" && typeof p.text === "string");
+        const textContent = allText
+          ? parts.map(p => p.text).join("\n")
+          : (parts.length === 1 && parts[0].type === "text"
+              ? parts[0].text
+              : parts);
         return [...toolResults, { role: "user", content: textContent }];
       }
       return toolResults;
@@ -189,9 +192,12 @@ function convertClaudeMessage(msg) {
     if (toolCalls.length > 0) {
       const result = { role: "assistant" };
       if (parts.length > 0) {
-        result.content = parts.length === 1 && parts[0].type === "text" 
-          ? parts[0].text 
-          : parts;
+        const allText = parts.every(p => p.type === "text" && typeof p.text === "string");
+        result.content = allText
+          ? parts.map(p => p.text).join("\n")
+          : (parts.length === 1 && parts[0].type === "text"
+              ? parts[0].text
+              : parts);
       }
       result.tool_calls = toolCalls;
       return result;
@@ -199,9 +205,12 @@ function convertClaudeMessage(msg) {
 
     // Return content
     if (parts.length > 0) {
+      const allText = parts.every(p => p.type === "text" && typeof p.text === "string");
       return {
         role,
-        content: parts.length === 1 && parts[0].type === "text" ? parts[0].text : parts
+        content: allText
+          ? parts.map(p => p.text).join("\n")
+          : (parts.length === 1 && parts[0].type === "text" ? parts[0].text : parts)
       };
     }
     

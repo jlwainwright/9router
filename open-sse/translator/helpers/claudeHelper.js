@@ -120,6 +120,19 @@ export function prepareClaudeRequest(body, provider = null, apiKey = null) {
     // Each tool_use must have tool_result in the NEXT message (not same message with other content)
     filtered = fixToolUseOrdering(filtered);
 
+    // Pass 1.6: Claude requires the last message to be from "user".
+    // If the last message is an assistant prefill (no tool_use), append a synthetic
+    // user message so Claude has a turn to respond to.
+    if (filtered.length > 0) {
+      const last = filtered[filtered.length - 1];
+      if (last.role === "assistant" && Array.isArray(last.content)) {
+        const hasToolUse = last.content.some(b => b.type === "tool_use");
+        if (!hasToolUse) {
+          filtered.push({ role: "user", content: [{ type: "text", text: "Continue." }] });
+        }
+      }
+    }
+
     body.messages = filtered;
 
     // Check if thinking is enabled AND last message is from user

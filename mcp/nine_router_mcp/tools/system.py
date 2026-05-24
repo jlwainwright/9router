@@ -4,6 +4,57 @@ from nine_router_mcp.client import api_get, api_post, api_put, api_delete, fmt_e
 
 mcp = FastMCP("system")
 
+_STATS_PERIODS = ("24h", "7d", "30d", "60d", "all")
+
+
+@mcp.tool(description="Combined health snapshot: app version, tunnel state, and usage totals (period default 7d).")
+async def get_status(period: str = "7d") -> str:
+    if period not in _STATS_PERIODS:
+        period = "7d"
+    v = await get_version()
+    t = await get_tunnel_status()
+    status, body = await api_get("/api/usage/stats", params={"period": period})
+    if status != 200:
+        return f"{v}\n\n{t}\n\n**Usage:** {fmt_error(status, body)}"
+    lines = [
+        f"## Usage snapshot ({period})",
+        f"**Requests:** {body.get('totalRequests', '—')}",
+        f"**Prompt tokens:** {body.get('totalPromptTokens', '—')}",
+        f"**Completion tokens:** {body.get('totalCompletionTokens', '—')}",
+    ]
+    return f"{v}\n\n{t}\n\n" + "\n".join(lines)
+
+
+@mcp.tool(description=(
+    "Aggregated usage statistics (alias for usage tools). "
+    "period: '24h', '7d', '30d', '60d', or 'all' (default '7d'). "
+    "Returns totals and per-provider breakdown."
+))
+async def get_stats(period: str = "7d") -> str:
+    if period not in _STATS_PERIODS:
+        return f"Invalid period '{period}'. Must be one of: {', '.join(_STATS_PERIODS)}."
+    status, body = await api_get("/api/usage/stats", params={"period": period})
+    if status != 200:
+        return fmt_error(status, body)
+    lines = [f"## Usage Stats ({period})"]
+    for k, v in body.items():
+        if not isinstance(v, (dict, list)):
+            lines.append(f"**{k}:** {v}")
+    providers = body.get("byProvider") or {}
+    if providers:
+        lines.append("\n### By Provider")
+        lines.append("| Provider | Requests | Prompt Tokens | Completion Tokens |")
+        lines.append("|---|---|---|---|")
+        for p, stats in providers.items():
+            if isinstance(stats, dict):
+                lines.append(
+                    f"| {p} "
+                    f"| {stats.get('requests', '')} "
+                    f"| {stats.get('promptTokens', '')} "
+                    f"| {stats.get('completionTokens', '')} |"
+                )
+    return "\n".join(lines)
+
 
 @mcp.tool(description="Get current and latest 9Router version. Indicates if an update is available.")
 async def get_version() -> str:

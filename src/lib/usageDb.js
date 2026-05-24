@@ -141,8 +141,8 @@ export async function getActiveRequests() {
     }
   } catch {}
 
-  for (const [connectionId, models] of Object.entries(pendingRequests.byAccount)) {
-    for (const [modelKey, count] of Object.entries(models)) {
+  for (const [connectionId, models] of Object.entries(pendingRequests.byAccount || {})) {
+    for (const [modelKey, count] of Object.entries(models || {})) {
       if (count > 0) {
         const accountName = connectionMap[connectionId] || `Account ${connectionId.slice(0, 8)}...`;
         const match = modelKey.match(/^(.*) \((.*)\)$/);
@@ -156,7 +156,8 @@ export async function getActiveRequests() {
   // Get recent requests from history (re-read to get latest)
   const db = await getUsageDb();
   await db.read();
-  const history = db.data.history || [];
+  let history = db.data.history || [];
+  if (!Array.isArray(history)) history = [];
   const seen = new Set();
   const recentRequests = [...history]
     .sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp))
@@ -265,6 +266,7 @@ export async function saveRequestUsage(entry) {
 export async function getUsageHistory(filter = {}) {
   const db = await getUsageDb();
   let history = db.data.history || [];
+  if (!Array.isArray(history)) history = [];
 
   // Apply filters
   if (filter.provider) {
@@ -441,6 +443,7 @@ const PERIOD_MS = { "24h": 86400000, "7d": 604800000, "30d": 2592000000, "60d": 
 export async function getUsageStats(period = "all") {
   const db = await getUsageDb();
   let history = db.data.history || [];
+  if (!Array.isArray(history)) history = [];
 
   // Filter history by period
   if (period && PERIOD_MS[period]) {
@@ -539,8 +542,8 @@ export async function getUsageStats(period = "all") {
   };
 
   // Build active requests list from pending counts
-  for (const [connectionId, models] of Object.entries(pendingRequests.byAccount)) {
-    for (const [modelKey, count] of Object.entries(models)) {
+  for (const [connectionId, models] of Object.entries(pendingRequests.byAccount || {})) {
+    for (const [modelKey, count] of Object.entries(models || {})) {
       if (count > 0) {
         const accountName = connectionMap[connectionId] || `Account ${connectionId.slice(0, 8)}...`;
         // modelKey is "model (provider)"

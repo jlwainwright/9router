@@ -16,7 +16,7 @@ const GITHUB_BASE_URL = "https://github.com/cloudflare/cloudflared/releases/late
 const PLATFORM_MAPPINGS = {
   darwin: {
     x64: "cloudflared-darwin-amd64.tgz",
-    arm64: "cloudflared-darwin-amd64.tgz"
+    arm64: "cloudflared-darwin-arm64.tgz"
   },
   win32: {
     x64: "cloudflared-windows-amd64.exe"

@@ -110,6 +110,15 @@ Default URLs:
 - Dashboard: `http://localhost:20128/dashboard`
 - OpenAI-compatible API: `http://localhost:20128/v1`
 
+### Cursor: MCP (manage 9Router from the IDE)
+
+This repo includes a **FastMCP** server under `mcp/` that exposes management tools (providers, keys, combos, etc.) to Cursor via **Model Context Protocol**.
+
+- **Project config (committed):** `.cursor/mcp.json` — uses `${workspaceFolder}` so paths work for any clone.
+- **Important:** Pass the **absolute path** to `server.py` in `args` and set **`PYTHONPATH`** to the `mcp/` directory. Some Cursor builds do not apply `cwd` for user-scoped MCP servers, which otherwise produces `File not found: /Users/<you>/nine_router_mcp/server.py`.
+- **Setup:** `cd mcp && pip install -e .` and ensure `fastmcp` is on your `PATH`.
+- **Details & copy-paste snippets:** [`mcp/README.md`](./mcp/README.md)
+
 ---
 
 ## 🎥 Video Tutorial

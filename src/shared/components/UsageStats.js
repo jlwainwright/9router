@@ -199,7 +199,7 @@ export default function UsageStats() {
     fetch("/api/providers")
       .then((r) => r.ok ? r.json() : null)
       .then((d) => {
-        if (!d?.connections) return;
+        if (!d?.connections || !Array.isArray(d.connections)) return;
         const seen = new Set();
         const unique = d.connections.filter((c) => {
           if (seen.has(c.provider)) return false;
