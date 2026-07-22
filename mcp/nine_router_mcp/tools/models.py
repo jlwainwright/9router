@@ -12,6 +12,18 @@ mcp = FastMCP("models")
 ))
 async def list_models() -> str:
     status, body = await api_get("/api/models")
+    if status == 401:
+        status, body = await api_get("/v1/models")
+        if status != 200:
+            return fmt_error(status, body, "model")
+        models = body.get("data", [])
+        if not models:
+            return "No models available."
+        lines = ["| Full Model | Provider | Alias |", "|---|---|---|"]
+        for m in models:
+            model_id = m.get("id", "")
+            lines.append(f"| {model_id} | {model_id.split('/', 1)[0] if '/' in model_id else ''} | |")
+        return "\n".join(lines)
     if status != 200:
         return fmt_error(status, body, "model")
     models = body.get("models", [])

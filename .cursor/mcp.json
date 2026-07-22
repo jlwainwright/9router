@@ -1,0 +1,13 @@
+{
+  "mcpServers": {
+    "9router": {
+      "command": "fastmcp",
+      "args": ["run", "${workspaceFolder}/mcp/nine_router_mcp/server.py"],
+      "cwd": "${workspaceFolder}/mcp",
+      "env": {
+        "NINE_ROUTER_URL": "http://localhost:20128",
+        "PYTHONPATH": "${workspaceFolder}/mcp"
+      }
+    }
+  }
+}
